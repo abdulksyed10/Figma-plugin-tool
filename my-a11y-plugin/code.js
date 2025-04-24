@@ -1,94 +1,68 @@
-// Whether or not a node has a visible image fill on it.
-// Ignores "figma.mixed" fill values.
 function nodeHasImageFill(node) {
-  return (
-    "fills" in node &&
-    Array.isArray(node.fills) &&
-    Boolean(node.fills.find((paint) => paint.visible && paint.type === "IMAGE"))
-  );
+    return ("fills" in node &&
+        Array.isArray(node.fills) &&
+        Boolean(node.fills.find(function (paint) { return paint.visible && paint.type === "IMAGE"; })));
 }
-
-// Returns all Figma nodes and descendants with image fills for an array of nodes
 function getImageNodes(nodes) {
-  const imageNodes = [];
-  nodes.forEach((node) => {
-    if (nodeHasImageFills(node)) {
-      imageNodes.push(node);
-    }
-
-    // Checking node descendants
-    if ("findAll" in node) {
-      node.findAll((descendant) => {
-        if (nodeHasImageFill(descendant)) {
-          imageNodes.push(descendant);
+    var imageNodes = [];
+    nodes.forEach(function (node) {
+        if (nodeHasImageFill(node)) {
+            imageNodes.push(node);
         }
-      });
-    }
-  });
-
-  return imageNodes;
+        if ("findAll" in node) {
+            node.findAll(function (descendant) {
+                if (nodeHasImageFill(descendant)) {
+                    imageNodes.push(descendant);
+                }
+                return false;
+            });
+        }
+    });
+    return imageNodes;
 }
-
-// helper function for creating an annotation
 function createImageAnnotation(node, customLabel) {
-  let DEFAULT_TEMPLATE = `🔵 **ALT TEXT**\n${node.name}`;
-  let markdown = customLabel || DEFAULT_TEMPLATE;
-  node.annotations = [
-    {
-      labelMarkdown: markdown,
-      properties: [{ type: "fills" }],
-    },
-  ];
+    var DEFAULT_TEMPLATE = "\uD83D\uDD35 **ALT TEXT**\n".concat(node.name);
+    var markdown = customLabel || DEFAULT_TEMPLATE;
+    node.setPluginData("annotation", markdown); // Replaces invalid `.annotations`
 }
-
-// helper function for notifying after annotations are created
 function showAnnotationNotification(count, skipped) {
-  let msg = "";
-  if (count > 0) {
-    msg += `Created ${count} annotation${count > 1 ? "s" : ""}.`;
-  }
-  if (skipped > 0) {
-    msg += ` Skipped ${skipped} annotation${skipped > 1 ? "s" : ""}.`;
-  }
-  figma.notify(msg);
-}
-
-// function to create annotations in selection
-// selection => selection can be figma.currentPage.selection or figma.currentPage
-// label (optional) => custom label to be annotated,
-//    if not provided will be labeled using image name
-function createAltTextAnnotations(selection, label) {
-  let imageNodes = getImageNodes(selection);
-
-  let count = 0; // number of annotations we'll create
-  let skipped = 0; // number of annotations we'll skip
-
-  imageNodes.forEach((node) => {
-    // if an annotations already exists, we don't want to overwrite it
-    if (node.annotations.length > 0) {
-      skipped++;
-      return;
+    var msg = "";
+    if (count > 0) {
+        msg += "Created ".concat(count, " annotation").concat(count > 1 ? "s" : "", ".");
     }
-
-    createImageAnnotation(node, label);
-    count++;
-  });
-
-  showAnnotationNotification(count, skipped);
+    if (skipped > 0) {
+        msg += " Skipped ".concat(skipped, " annotation").concat(skipped > 1 ? "s" : "", ".");
+    }
+    figma.notify(msg);
 }
-
-// runs plugin from menu commands
-figma.on("run", ({ command }) => {
-  switch (command) {
-    case "all-images":
-      createAltTextAnnotations([figma.currentPage]);
-      figma.closePlugin();
-      break;
-    case "selection":
-      createAltTextAnnotations(figma.currentPage.selection);
-      figma.closePlugin();
-    default:
-      // do nothing
-      break;
-  }
+function createAltTextAnnotations(selection, label) {
+    var imageNodes = getImageNodes(selection);
+    var count = 0;
+    var skipped = 0;
+    imageNodes.forEach(function (node) {
+        var existing = node.getPluginData("annotation");
+        if (existing && existing.length > 0) {
+            skipped++;
+            return;
+        }
+        createImageAnnotation(node, label);
+        count++;
+    });
+    showAnnotationNotification(count, skipped);
+}
+figma.on("run", function (_a) {
+    var command = _a.command;
+    switch (command) {
+        case "all-images":
+            createAltTextAnnotations(figma.currentPage.children);
+            figma.closePlugin();
+            break;
+        case "selection":
+            createAltTextAnnotations(figma.currentPage.selection);
+            figma.closePlugin();
+            break;
+        default:
+            figma.closePlugin("No command recognized.");
+            break;
+    }
 });

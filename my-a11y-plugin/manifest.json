@@ -1,18 +1,23 @@
 {
-  "name": "Annotations Sample Plugin",
-  "id": "1442969948273040502",
-  "api": "1.0.0",
-  "main": "code.js",
-  "capabilities": ["inspect"],
-  "enableProposedApi": true,
-  "documentAccess": "dynamic-page",
-  "editorType": ["dev"],
+  "name": "Image Annotation Plugin",
+  "id": "com.abdulks.my-a11y-plugin",
+  "main": "dist/code.js",
   "ui": "ui.html",
-  "networkAccess": {
-    "allowedDomains": ["none"]
-  },
+  "editorType": ["figma"],
+  "api": "1.0.0",
   "menu": [
-    { "name": "Annotate images in selection", "command": "selection" },
-    { "name": "Annotate all images on page", "command": "all-images" }
+    {
+      "name": "Annotate All Images",
+      "command": "all-images"
+    },
+    {
+      "name": "Annotate Selected Images",
+      "command": "selection"
+    },
+    {
+      "name": "Export Selection as JSON",
+      "command": "export-selection"
+    }
+    
   ]
 }
